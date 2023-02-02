@@ -3,6 +3,7 @@ var genfun = require('generate-function')
 var jsonpointer = require('jsonpointer')
 var xtend = require('xtend')
 var formats = require('./formats')
+const RE2 = require('re2');
 
 var get = function(obj, additionalSchemas, ptr) {
 
@@ -143,7 +144,7 @@ var compile = function(schema, cache, root, reporter, opts) {
   var patterns = function(p) {
     if (reversePatterns[p]) return reversePatterns[p]
     var n = gensym('pattern')
-    scope[n] = new RegExp(p)
+    scope[n] = new RE2(p)
     reversePatterns[p] = n
     return n
   }
