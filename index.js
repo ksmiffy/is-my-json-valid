@@ -3,7 +3,6 @@ var genfun = require('generate-function')
 var jsonpointer = require('jsonpointer')
 var xtend = require('xtend')
 var formats = require('./formats')
-const RE2 = require('re2');
 
 var get = function(obj, additionalSchemas, ptr) {
 
@@ -141,10 +140,14 @@ var compile = function(schema, cache, root, reporter, opts) {
   }
 
   var reversePatterns = {}
-  var patterns = function(p) {
+  var patterns = function(p, opts) {
     if (reversePatterns[p]) return reversePatterns[p]
     var n = gensym('pattern')
-    scope[n] = new RE2(p)
+    if (opts.regexLib) {
+      scope[n] = new opts.regexLib(p);
+    } else {
+      scope[n] = new RegExp(p)
+    }
     reversePatterns[p] = n
     return n
   }
@@ -324,8 +327,8 @@ var compile = function(schema, cache, root, reporter, opts) {
         return keys+'['+i+'] !== '+JSON.stringify(p)
       }
 
-      var toTest = function(p) {
-        return '!'+patterns(p)+'.test('+keys+'['+i+'])'
+      var toTest = function(p, opts = {}) {
+        return '!'+patterns(p, opts)+'.test('+keys+'['+i+'])'
       }
 
       var additionalProp = Object.keys(properties || {}).map(toCompare)
@@ -399,7 +402,7 @@ var compile = function(schema, cache, root, reporter, opts) {
         ('for (var %s = 0; %s < %s.length; %s++) {', i, i, keys, i)
 
       Object.keys(node.patternProperties).forEach(function(key) {
-        var p = patterns(key)
+        var p = patterns(key, opts)
         validate('if (%s.test(%s)) {', p, keys+'['+i+']')
         visit(name+'['+keys+'['+i+']]', node.patternProperties[key], reporter, filter, schemaPath.concat(['patternProperties', key]))
         validate('}')
@@ -410,7 +413,7 @@ var compile = function(schema, cache, root, reporter, opts) {
     }
 
     if (node.pattern) {
-      var p = patterns(node.pattern)
+      var p = patterns(node.pattern, opts)
       if (type !== 'string') validate('if (%s) {', types.string(name))
       validate('if (!(testLimitedRegex(%s, %s, %d))) {', p, name, typeof node.maxLength === 'undefined' ? -1 : node.maxLength)
       error('pattern mismatch')
