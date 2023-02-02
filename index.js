@@ -108,7 +108,7 @@ var testLimitedRegex = function (r, s, maxLength) {
   return r.test(s)
 }
 
-var compile = function(schema, cache, root, reporter, opts) {
+var compile = function(schema, cache, root, reporter, opts = {}) {
   var fmts = opts ? xtend(formats, opts.formats) : formats
   var scope = {unique:unique, formats:fmts, isMultipleOf:isMultipleOf, testLimitedRegex:testLimitedRegex}
   var verbose = opts ? !!opts.verbose : false;
